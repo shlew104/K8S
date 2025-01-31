@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cfm-goldi 
+  namespace: ns-goldi
+data:
+  MY_POD_SERVICE_NAME: "svc-goldi"
+  GLOBAL_MASTER: "goldilocks-0"
+

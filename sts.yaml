@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: goldilocks
+  namespace: ns-goldi
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  minReadySeconds: 20
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: goldilocks
+  serviceName: svc-goldi
+  template:
+    metadata:
+      labels:
+        app: goldilocks
+    spec:
+      containers:
+        - name: app
+          image: sunjesoft/cluster:22c_1_3_group
+          imagePullPolicy: Always
+          args:
+            - /home/sunje/goldilocks_home/entrypoint-init.sh
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: MY_POD_SERVICE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: cfm-goldi
+                  key: MY_POD_SERVICE_NAME
+            - name: CLUSTER_CREATE_CHECK
+              value: '1'
+            - name: APP_NAME
+              value: GOLDILOCKS
+            - name: TABLE_SPACE_SIZE
+              value: 1848M
+            - name: TEMP_TABLESPACE_SIZE
+              value: 1848M
+            - name: SERVICE_ACCOUNT
+              value: U1
+            - name: GOLDILOCKS_DATA
+              value: /home/sunje/goldilocks_data/$MY_POD_NAME
+          lifecycle:
+            #postStart:
+            #  exec:
+            #    command:
+            #      - /bin/sh
+            #      - -c
+            #      - "echo 'postStart hook triggered' >> /tmp/poststart.log"
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - "/home/sunje/goldilocks_home/drop_group.sh"
+          ports:
+            - containerPort: 10101
+              name: cluster-port
+              protocol: TCP
+            - containerPort: 22581
+              name: member-port
+              protocol: TCP
+          resources:
+            limits:
+              cpu: '2'
+              memory: '5Gi'
+            #requests:
+            #  cpu: '2'
+            #  memory: '2Gi'
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /home/sunje/goldilocks_data
+              name: pvc-goldilocks-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: pvc-goldilocks-data
+          persistentVolumeClaim:
+            claimName: pvc-goldi

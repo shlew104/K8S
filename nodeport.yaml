@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeport-goldi
+  namespace: ns-goldi
+spec:
+  selector:
+    app: goldilocks
+      #    statefulset.kubernetes.io/pod-name: goldilocks-0
+  type: NodePort
+  ports:
+    - name: member-port
+      port: 22581
+      protocol: TCP
+      targetPort: 22581
+      nodePort: 31081
+
